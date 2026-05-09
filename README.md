@@ -1,5 +1,6 @@
 # Patient Outcomes Tracker
 
+![CI](https://github.com/Demontrick/patient-outcomes-tracker/actions/workflows/ci.yml/badge.svg)
 ## Problem Statement
 In modern healthcare, understanding the real-world effectiveness of treatments and interventions is crucial for improving patient care and optimizing clinical strategies. Traditional methods often rely on periodic assessments that provide a snapshot but fail to capture the dynamic nature of a patient's health journey. This leads to several challenges:
 
