@@ -1,169 +1,411 @@
 # Patient Outcomes Tracker
 
 ![CI](https://github.com/Demontrick/patient-outcomes-tracker/actions/workflows/ci.yml/badge.svg)
-## Problem Statement
-In modern healthcare, understanding the real-world effectiveness of treatments and interventions is crucial for improving patient care and optimizing clinical strategies. Traditional methods often rely on periodic assessments that provide a snapshot but fail to capture the dynamic nature of a patient's health journey. This leads to several challenges:
+AI-powered clinical outcomes monitoring platform built with FastAPI, React 19, TypeScript, PostgreSQL, and locally hosted LLM streaming via Ollama.
 
-1.  **Delayed Insights:** Health status changes can go unnoticed for extended periods, delaying necessary adjustments to care plans.
-2.  **Lack of Granularity:** Aggregate data often masks individual patient trajectories, making it difficult to identify specific factors influencing outcomes.
-3.  **Inefficient Resource Allocation:** Without clear, real-time trend data, healthcare providers may struggle to prioritize patients who are deteriorating or to identify successful interventions that can be scaled.
-4.  **Limited Proactive Care:** Reacting to acute events rather than proactively managing health trends can lead to worse outcomes and higher costs.
+---
 
-The **Patient Outcomes Tracker** addresses these challenges by providing a system to continuously monitor patient health scores and automatically detect trends (improving, stable, or deteriorating). This enables healthcare professionals to intervene more effectively and provide personalized, proactive care.
+## Overview
 
-## Solution Overview
-The Patient Outcomes Tracker is a full-stack application designed to track and visualize patient health outcomes over time. It features a robust backend built with FastAPI and PostgreSQL, responsible for data storage, trend analysis, and API exposure. The frontend, developed with React 19 and TypeScript, provides an intuitive interface for viewing patient lists, their current health scores, and their outcome trends.
+Modern healthcare systems often rely on delayed or static assessments that fail to capture how patient conditions evolve over time.
 
-The core value of this application lies in its **trend detection logic**. Instead of merely displaying raw scores, the system analyzes the delta between recent health readings to categorize a patient's status as "Improving," "Stable," or "Deteriorating." This allows for quick identification of patients who may require immediate attention or whose treatment plans are proving effective.
+The Patient Outcomes Tracker addresses this by combining:
 
-## Core Features
+- real-time patient outcome tracking
+- trend analysis
+- AI-generated clinical recommendations
+- streaming UX
+- modern full-stack architecture
 
-*   **Patient Management:** Maintain a list of patients with their demographic and condition information.
-*   **Outcome Tracking:** Record and store patient health scores over time, each with a timestamp.
-*   **Real-time Trend Analysis:** Automatically calculate and display health trends for each patient based on their recent outcome scores.
-    *   **Improving:** Health score shows a significant positive delta.
-    *   **Stable:** Health score remains relatively consistent.
-    *   **Deteriorating:** Health score shows a significant negative delta.
-*   **Colour-Coded Badges:** Visual cues on the frontend to quickly identify patient trends.
-*   **FastAPI Backend:**
-    *   `GET /patients`: Retrieve a list of patients, with optional filtering by condition. Includes calculated trend and current score.
-    *   `POST /outcomes`: Submit new outcome readings for a patient.
-    *   `GET /patients/{id}/trend`: Get detailed trend history for a specific patient.
-*   **PostgreSQL Database:** Persistent storage for patient and outcome data.
-*   **Kafka Event Stub:** A mock in-memory Kafka publisher that simulates publishing an `outcome.submitted` event whenever a new outcome is recorded. This demonstrates how the system could integrate with real-time data streaming platforms for further processing or alerting.
-*   **Comprehensive Testing:**
-    *   **Backend:** Pytest tests for API endpoints and trend logic.
-    *   **Frontend:** Vitest and React Testing Library tests for components and application logic.
-*   **CI/CD with GitHub Actions:** Automated testing for both frontend and backend on every push and pull request.
-*   **Docker Compose:** Easy local setup and deployment of the entire stack (PostgreSQL, FastAPI, Nginx-served React app).
+The platform allows healthcare teams to:
 
-## Technical Stack
+- monitor patient health trajectories
+- identify deteriorating patients early
+- visualize outcome trends
+- generate contextual AI-powered recommendations
+- continuously update patient outcome records
 
-*   **Frontend:**
-    *   React 19
-    *   TypeScript
-    *   Vite (build tool)
-    *   TanStack React Query (data fetching and caching)
-    *   Tailwind CSS (styling)
-    *   Vitest & React Testing Library (testing)
-*   **Backend:**
-    *   Python 3.11
-    *   FastAPI (web framework)
-    *   SQLAlchemy (ORM)
-    *   PostgreSQL (database)
-    *   `kafka-python-ng` (for Kafka stub, though in-memory for this demo)
-    *   Pytest (testing)
-*   **Infrastructure:**
-    *   Docker & Docker Compose
-    *   GitHub Actions (CI)
+---
 
-## Setup and Local Development
+# Core Features
 
-To get the Patient Outcomes Tracker up and running on your local machine, follow these steps:
+## Patient Management
 
-### Prerequisites
+- Track patient demographic and clinical information
+- View condition-specific patient groups
+- Filter patients by condition instantly
 
-*   Docker and Docker Compose installed.
-*   Git installed.
+---
 
-### 1. Clone the Repository
+## Outcome Tracking
 
-```bash
+- Submit new health outcome scores
+- Persist patient history in PostgreSQL
+- Automatically refresh frontend state after mutations
+
+---
+
+## Trend Analysis
+
+Each patient receives a calculated health trend:
+
+- Improving
+- Stable
+- Deteriorating
+
+Trend calculations are derived from recent patient outcome deltas.
+
+---
+
+## AI Clinical Recommendations
+
+Each patient card includes an **AI Insight** action that generates contextual clinical recommendations in real time.
+
+The recommendations stream progressively into the UI instead of waiting for the full response.
+
+---
+
+# AI Clinical Insight Engine
+
+One of the core features of this project is the AI-powered clinical recommendation system.
+
+When a user clicks the **"AI Insight"** button on a patient card, the frontend sends a streaming request to the backend, which generates contextual clinical recommendations using a locally hosted LLM through Ollama.
+
+---
+
+## Model Used
+
+- `qwen2.5:0.5b`
+- Served locally using Ollama
+- Streaming responses enabled for real-time UI updates
+
+---
+
+## Why This Model?
+
+The `qwen2.5:0.5b` model was selected because it is:
+
+- lightweight and fast for local development
+- efficient enough to run on consumer hardware
+- capable of producing structured recommendation-style responses
+- suitable for streaming token-by-token outputs with low latency
+
+This allowed the project to demonstrate real-time AI integration without relying on external paid APIs.
+
+---
+
+## AI Request Flow
+
+1. User clicks **AI Insight**
+2. React frontend sends request to:
+   `/patients/{id}/insight`
+3. FastAPI backend:
+   - loads patient data
+   - builds a clinical context prompt
+   - sends request to Ollama
+4. Ollama streams generated tokens
+5. Backend converts tokens into SSE events
+6. Frontend progressively renders recommendations in real time
+
+---
+
+## Streaming Architecture
+
+The backend streams responses using **Server-Sent Events (SSE)**.
+
+The frontend consumes the stream incrementally using:
+
+- `ReadableStream`
+- `TextDecoder`
+- `AbortController`
+
+This enables:
+
+- real-time rendering
+- cancellable requests
+- smoother UX
+- non-blocking AI interactions
+
+---
+
+## Structured Stream Handling
+
+The backend streams events in SSE format:
+
+```json
+{
+  "type": "chunk",
+  "content": "..."
+}
+
+The frontend transforms these low-level stream events into clean recommendation panels so users never see raw JSON or transport-layer data.
+
+Example AI Recommendations
+
+The AI layer can generate:
+
+monitoring recommendations
+lifestyle intervention suggestions
+medication adherence reminders
+follow-up guidance
+risk-awareness recommendations
+
+The AI system is designed as a clinical support feature rather than a diagnostic engine.
+
+Product Engineering Decisions
+
+This project was intentionally designed with product engineering principles in mind.
+
+Real-Time Streaming UX
+
+Instead of waiting for a complete AI response before rendering, the UI streams recommendations progressively for a faster and more responsive user experience.
+
+React Query for Server State
+
+TanStack React Query was used to:
+
+cache API responses
+simplify async state management
+automatically refresh stale data
+reduce unnecessary network requests
+Type-Safe Frontend
+
+The frontend is fully written in TypeScript to improve:
+
+API safety
+maintainability
+component contracts
+developer experience
+Separation of Concerns
+
+The architecture separates:
+
+API logic
+AI streaming logic
+reusable UI components
+data-fetching concerns
+presentation logic
+
+This keeps the application scalable and maintainable.
+
+Local-First AI Development
+
+Using Ollama with a locally hosted model enables:
+
+offline experimentation
+lower development costs
+faster iteration
+reduced external dependencies
+Performance & UX Considerations
+
+Several UX-focused improvements were implemented:
+
+streaming AI responses
+instant patient filtering
+optimistic data refresh
+lightweight rendering
+cancelable AI requests
+responsive Tailwind layout
+clean recommendation formatting
+
+The application prioritizes perceived responsiveness and clarity of information.
+
+Technical Stack
+Frontend
+React 19
+TypeScript
+Vite
+TanStack React Query
+Tailwind CSS
+Lucide React
+Vitest
+React Testing Library
+Backend
+Python 3.11
+FastAPI
+SQLAlchemy
+PostgreSQL
+Ollama
+Server-Sent Events (SSE)
+Pytest
+Infrastructure
+Docker
+Docker Compose
+GitHub Actions CI
+API Endpoints
+Patients
+Get Patients
+GET /patients
+
+Optional query parameter:
+
+GET /patients?condition=diabetes
+
+Returns:
+
+patient information
+current score
+calculated trend
+Create Outcome
+POST /outcomes
+
+Body:
+
+{
+  "patient_id": 1,
+  "score": 85
+}
+Generate AI Insight
+POST /patients/{id}/insight
+
+Returns streaming SSE response.
+
+Kafka Event Stub
+
+The backend includes a lightweight Kafka-style event stub that simulates publishing:
+
+outcome.submitted
+
+events whenever a new patient outcome is recorded.
+
+This demonstrates how the system could later integrate with:
+
+Kafka
+event pipelines
+alerting systems
+analytics consumers
+Testing
+Backend
+
+Pytest coverage includes:
+
+API endpoints
+trend calculation logic
+outcome submission
+validation handling
+Frontend
+
+Vitest + React Testing Library tests include:
+
+component rendering
+user interactions
+state updates
+query behavior
+CI/CD
+
+GitHub Actions automatically runs:
+
+frontend tests
+backend tests
+linting
+validation checks
+
+on every push and pull request.
+
+Local Development
+Prerequisites
+Docker
+Docker Compose
+Node.js
+Python 3.11
+Ollama
+Run Ollama
+
+Install model:
+
+ollama pull qwen2.5:0.5b
+
+Start Ollama locally before running the backend.
+
+Clone Repository
 git clone https://github.com/your-username/patient-outcomes-tracker.git
+
 cd patient-outcomes-tracker
-```
-
-### 2. Build and Run with Docker Compose
-
-Navigate to the root of the project and run Docker Compose. This will build the Docker images for both frontend and backend, set up the PostgreSQL database, and start all services.
-
-```bash
+Start Application
 docker-compose up --build
-```
+Access Application
 
-Wait for all services to start. You can check the logs to ensure everything is running correctly.
+Frontend:
 
-### 3. Access the Application
+http://localhost:80
 
-*   **Frontend:** Open your web browser and navigate to `http://localhost:80`
-*   **Backend API (Swagger UI):** Access the API documentation at `http://localhost:8000/docs`
+Backend:
 
-### 4. Seed Initial Data (Optional)
-
-To populate the database with some sample patients and outcomes, you can make a `POST` request to the `/seed` endpoint:
-
-```bash
+http://localhost:8000/docs
+Seed Sample Data
 curl -X POST http://localhost:8000/seed
-```
-
-Refresh the frontend to see the seeded data.
-
-### 5. Running Tests
-
-#### Backend Tests
-
-To run backend tests (requires Python and pip installed locally, or you can run inside the backend container):
-
-```bash
-cd backend
-python3 -m venv venv
-. venv/bin/activate
-pip install -r requirements.txt pytest httpx
-pytest
-```
-
-#### Frontend Tests
-
-To run frontend tests (requires Node.js and pnpm installed locally, or you can run inside the frontend container):
-
-```bash
+Run Frontend Locally
 cd frontend
-pnpm install
-pnpm test
-```
 
-## Project Structure
+npm install
 
-```
+npm run dev
+Run Backend Locally
+cd backend
+
+python -m venv venv
+
+Linux / macOS:
+
+source venv/bin/activate
+
+Windows:
+
+venv\Scripts\activate
+
+Install dependencies:
+
+pip install -r requirements.txt
+
+Run server:
+
+uvicorn main:app --reload
+Project Structure
 patient-outcomes-tracker/
-├── .github/
-│   └── workflows/
-│       └── ci.yml             # GitHub Actions CI workflow
+│
 ├── backend/
-│   ├── Dockerfile             # Dockerfile for FastAPI backend
-│   ├── requirements.txt       # Python dependencies
-│   ├── main.py                # FastAPI application entry point
-│   ├── models.py              # SQLAlchemy models for database
-│   ├── database.py            # Database connection and session setup
-│   ├── trends.py              # Logic for patient trend calculation
-│   ├── kafka_stub.py          # Mock Kafka event publisher
-│   └── test_main.py           # Pytest tests for backend
+│   ├── main.py
+│   ├── models.py
+│   ├── database.py
+│   ├── trends.py
+│   ├── kafka_stub.py
+│   ├── ai.py
+│   └── tests/
+│
 ├── frontend/
-│   ├── Dockerfile             # Dockerfile for React frontend
-│   ├── package.json           # Frontend dependencies
-│   ├── pnpm-lock.yaml         # pnpm lock file
-│   ├── public/
 │   ├── src/
-│   │   ├── App.tsx            # Main React application component
-│   │   ├── index.css          # Tailwind CSS directives
-│   │   ├── main.tsx           # React entry point
-│   │   ├── types.ts           # TypeScript interfaces
 │   │   ├── components/
-│   │   │   └── TrendBadge.tsx # React component for trend display
-│   │   └── test/
-│   │       └── setup.ts       # Vitest setup file
-│   ├── vite.config.ts         # Vite configuration with Vitest setup
-│   └── App.test.tsx           # Vitest tests for frontend
-├── docker-compose.yml         # Docker Compose configuration
-└── README.md                  # Project README
-```
+│   │   ├── App.tsx
+│   │   ├── types.ts
+│   │   └── main.tsx
+│   ├── vite.config.ts
+│   └── package.json
+│
+├── docker-compose.yml
+└── README.md
+Future Enhancements
 
-## Future Enhancements
+Potential next steps include:
 
-*   **Advanced Trend Analysis:** Implement more sophisticated algorithms for trend detection (e.g., statistical regression, machine learning models) that consider more data points and historical context.
-*   **User Authentication:** Add secure user login and role-based access control.
-*   **Real Kafka Integration:** Replace the mock Kafka stub with a real Kafka producer and consumer setup for asynchronous event processing.
-*   **Notifications and Alerts:** Implement a system to send automated notifications to healthcare providers when a patient's trend deteriorates.
-*   **Interactive Charts:** Integrate charting libraries (e.g., Chart.js, Recharts) to visualize patient score history and trends on the frontend.
-*   **Admin Dashboard:** A dedicated interface for managing patients, conditions, and system settings.
-*   **Deployment Automation:** Scripts or configurations for deploying the application to cloud platforms (e.g., AWS, GCP, Azure).
+Retrieval-Augmented Generation (RAG)
+vector database integration
+historical trend summarization
+physician review workflows
+structured AI outputs
+advanced analytics dashboards
+real-time notifications
+multi-patient risk prediction
+healthcare-specific fine-tuned models
+Key Takeaways
+
+This project demonstrates:
+
+full-stack TypeScript + Python development
+real-time streaming architectures
+AI integration with local LLMs
+product-focused frontend engineering
+scalable API design
+async state management
+modern React patterns
+responsive UX design
+production-style architecture decisions

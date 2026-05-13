@@ -14,16 +14,66 @@ export function usePatientInsight() {
 
   const abortRef = useRef<AbortController | null>(null);
 
+  // -------------------------
+  // RESET
+  // -------------------------
   const resetInsight = () => {
     setText("");
     setError(null);
   };
 
+  // -------------------------
+  // CANCEL STREAM
+  // -------------------------
   const cancelInsight = () => {
     abortRef.current?.abort();
     setLoading(false);
   };
 
+  // -------------------------
+  // CLEAN + TRANSFORM EVENTS
+  // -------------------------
+  const processEvent = (raw: string) => {
+    if (!raw) return;
+
+    try {
+      const event: InsightEvent = JSON.parse(raw);
+
+      switch (event.type) {
+        case "chunk":
+          setText((prev) => prev + event.content);
+          break;
+
+        case "error":
+          setError(event.message);
+          break;
+
+        case "end":
+          setLoading(false);
+          break;
+
+        default:
+          break;
+      }
+    } catch {
+      // -------------------------
+      // RAW TEXT FALLBACK
+      // -------------------------
+      const cleaned = raw
+        .replace(/^data:/gm, "")
+        .replace(/\{"type":"start"\}/g, "")
+        .replace(/\{"type":"end"\}/g, "")
+        .trim();
+
+      if (cleaned) {
+        setText((prev) => prev + cleaned);
+      }
+    }
+  };
+
+  // -------------------------
+  // MAIN STREAM HANDLER
+  // -------------------------
   const getInsight = async (patientId: number) => {
     setLoading(true);
     setText("");
@@ -42,7 +92,13 @@ export function usePatientInsight() {
         }
       );
 
-      if (!res.body) throw new Error("No stream body");
+      if (!res.ok) {
+        throw new Error(`Request failed: ${res.status}`);
+      }
+
+      if (!res.body) {
+        throw new Error("No response body");
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder("utf-8");
@@ -51,40 +107,35 @@ export function usePatientInsight() {
 
       while (true) {
         const { value, done } = await reader.read();
+
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
 
         const lines = buffer.split("\n");
+
         buffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (!line.startsWith("data:")) continue;
+          if (!line.trim()) continue;
 
-          const jsonStr = line.replace("data:", "").trim();
-          if (!jsonStr) continue;
+          // Remove SSE prefix
+          const cleanedLine = line.replace(/^data:\s*/, "").trim();
 
-          try {
-            const event: InsightEvent = JSON.parse(jsonStr);
-
-            if (event.type === "chunk") {
-              setText((prev) => prev + event.content);
-            }
-
-            if (event.type === "error") {
-              setError(event.message);
-            }
-
-            if (event.type === "end") {
-              setLoading(false);
-            }
-          } catch {
-            // ignore bad chunks
-          }
+          processEvent(cleanedLine);
         }
       }
+
+      // Process remaining buffer
+      if (buffer.trim()) {
+        const cleanedBuffer = buffer.replace(/^data:\s*/, "").trim();
+
+        processEvent(cleanedBuffer);
+      }
     } catch (e: any) {
-      setError(e.message);
+      if (e.name !== "AbortError") {
+        setError(e.message || "Failed to generate insight");
+      }
     } finally {
       setLoading(false);
     }

@@ -3,7 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Patient } from "./types";
 import { TrendBadge } from "./components/TrendBadge";
 import { usePatientInsight } from "./components/usePatientInsight";
-import { Activity, User, PlusCircle, Search, XCircle } from "lucide-react";
+import {
+  Activity,
+  User,
+  PlusCircle,
+  Search,
+  XCircle,
+} from "lucide-react";
 
 const API_BASE = "http://localhost:8000";
 
@@ -40,8 +46,10 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newOutcome),
       });
+
       return res.json();
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
@@ -49,10 +57,15 @@ function App() {
 
   const handleAddScore = (patientId: number) => {
     const score = prompt("Enter new health score (0-100):");
+
     if (score !== null) {
       const numScore = parseFloat(score);
+
       if (!isNaN(numScore)) {
-        mutation.mutate({ patient_id: patientId, score: numScore });
+        mutation.mutate({
+          patient_id: patientId,
+          score: numScore,
+        });
       }
     }
   };
@@ -73,13 +86,16 @@ function App() {
               <Activity className="mr-2 text-blue-600" />
               Patient Outcomes Tracker
             </h1>
+
             <p className="mt-2 text-sm text-gray-600">
               Clinical Evidence Network Monitoring
             </p>
           </div>
 
+          {/* FILTER */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+
             <input
               type="text"
               placeholder="Filter by condition..."
@@ -92,30 +108,36 @@ function App() {
 
         {/* BODY */}
         {isLoading ? (
-          <div className="text-center py-12">Loading patients...</div>
+          <div className="text-center py-12">
+            Loading patients...
+          </div>
         ) : (
-          <div className="bg-white shadow sm:rounded-md">
+          <div className="bg-white shadow sm:rounded-md overflow-hidden">
             <ul className="divide-y divide-gray-200">
 
               {patients?.map((patient) => {
                 const isActive = activePatientId === patient.id;
 
                 return (
-                  <li key={patient.id} className="px-4 py-4 sm:px-6">
+                  <li
+                    key={patient.id}
+                    className="px-4 py-4 sm:px-6"
+                  >
 
-                    {/* ROW */}
-                    <div className="flex items-center justify-between hover:bg-gray-50 rounded-lg p-2">
+                    {/* PATIENT ROW */}
+                    <div className="flex items-center justify-between hover:bg-gray-50 rounded-xl p-3 transition">
 
                       {/* LEFT */}
                       <div className="flex items-center">
-                        <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <div className="h-11 w-11 bg-blue-100 rounded-full flex items-center justify-center">
                           <User className="text-blue-600 w-6 h-6" />
                         </div>
 
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-semibold text-gray-900">
                             {patient.name}
                           </div>
+
                           <div className="text-sm text-gray-500">
                             {patient.condition} • Age {patient.age}
                           </div>
@@ -126,30 +148,36 @@ function App() {
                       <div className="flex items-center space-x-3">
 
                         <div className="text-right">
-                          <div className="text-sm font-semibold">
+                          <div className="text-sm font-semibold text-gray-900">
                             Score: {patient.current_score ?? "N/A"}
                           </div>
+
                           <TrendBadge trend={patient.trend} />
                         </div>
 
+                        {/* ADD SCORE */}
                         <button
                           onClick={() => handleAddScore(patient.id)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition"
+                          title="Add Reading"
                         >
                           <PlusCircle className="w-6 h-6" />
                         </button>
 
+                        {/* AI INSIGHT */}
                         <button
                           onClick={() => handleInsight(patient.id)}
-                          className="px-3 py-1 text-sm bg-black text-white rounded-lg"
+                          className="px-4 py-2 text-sm bg-black text-white rounded-lg hover:bg-gray-800 transition"
                         >
                           AI Insight
                         </button>
 
+                        {/* CANCEL */}
                         {isActive && loading && (
                           <button
                             onClick={cancelInsight}
-                            className="p-1 text-red-500"
+                            className="p-1 text-red-500 hover:bg-red-50 rounded transition"
+                            title="Cancel"
                           >
                             <XCircle className="w-5 h-5" />
                           </button>
@@ -159,20 +187,91 @@ function App() {
 
                     {/* INSIGHT PANEL */}
                     {isActive && (
-                      <div className="mt-3 ml-14 text-sm bg-gray-50 p-3 border rounded">
+                      <div className="mt-4 ml-14 bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-2xl p-5 shadow-sm">
 
+                        {/* LOADING */}
                         {loading && (
-                          <p className="text-gray-500">Generating insight...</p>
+                          <div className="flex items-center gap-2 text-gray-500">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+
+                            <p className="text-sm">
+                              Generating clinical insight...
+                            </p>
+                          </div>
                         )}
 
+                        {/* ERROR */}
                         {error && (
-                          <p className="text-red-600">{error}</p>
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                            <p className="text-red-600 text-sm">
+                              {error}
+                            </p>
+                          </div>
                         )}
 
+                        {/* INSIGHT CONTENT */}
                         {text && (
-                          <pre className="whitespace-pre-wrap text-gray-800">
-                            {text}
-                          </pre>
+                          <div className="space-y-4">
+
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+
+                              <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide">
+                                AI Clinical Recommendations
+                              </h3>
+                            </div>
+
+                            <div className="space-y-3">
+
+                              {text
+                                .replace(/\s+/g, " ")
+                                .split(/(?=\d+\.\s*\*\*)/)
+                                .filter(Boolean)
+                                .map((item, index) => {
+
+                                  const cleaned = item
+                                    .replace(/^\d+\.\s*/, "")
+                                    .replace(/\*\*/g, "")
+                                    .trim();
+
+                                  const parts = cleaned.split(":");
+
+                                  const title =
+                                    parts[0] || "Recommendation";
+
+                                  const body =
+                                    parts.slice(1).join(":").trim();
+
+                                  return (
+                                    <div
+                                      key={index}
+                                      className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition"
+                                    >
+                                      <div className="flex items-start gap-4">
+
+                                        {/* NUMBER */}
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-bold">
+                                          {index + 1}
+                                        </div>
+
+                                        {/* CONTENT */}
+                                        <div className="flex-1">
+
+                                          <h4 className="font-semibold text-gray-900 mb-1">
+                                            {title}
+                                          </h4>
+
+                                          <p className="text-sm leading-6 text-gray-700">
+                                            {body}
+                                          </p>
+
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
                         )}
                       </div>
                     )}
@@ -181,8 +280,9 @@ function App() {
                 );
               })}
 
+              {/* EMPTY */}
               {patients?.length === 0 && (
-                <li className="p-6 text-center text-gray-500">
+                <li className="p-8 text-center text-gray-500">
                   No patients found
                 </li>
               )}
