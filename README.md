@@ -1,6 +1,7 @@
 # Patient Outcomes Tracker
 
 ![CI](https://github.com/Demontrick/patient-outcomes-tracker/actions/workflows/ci.yml/badge.svg)
+
 AI-powered clinical outcomes monitoring platform built with FastAPI, React 19, TypeScript, PostgreSQL, and locally hosted LLM streaming via Ollama.
 
 ---
@@ -11,356 +12,301 @@ Modern healthcare systems often rely on delayed or static assessments that fail 
 
 The Patient Outcomes Tracker addresses this by combining:
 
-- real-time patient outcome tracking
-- trend analysis
+- Real-time patient outcome tracking
+- Trend analysis
 - AI-generated clinical recommendations
-- streaming UX
-- modern full-stack architecture
+- Streaming UX
+- Modern full-stack architecture
 
 The platform allows healthcare teams to:
 
-- monitor patient health trajectories
-- identify deteriorating patients early
-- visualize outcome trends
-- generate contextual AI-powered recommendations
-- continuously update patient outcome records
+- Monitor patient health trajectories
+- Identify deteriorating patients early
+- Visualize outcome trends
+- Generate contextual AI-powered recommendations
+- Continuously update patient outcome records
 
 ---
 
-# Core Features
+## Core Features
 
-## Patient Management
-
+### Patient Management
 - Track patient demographic and clinical information
 - View condition-specific patient groups
 - Filter patients by condition instantly
 
----
-
-## Outcome Tracking
-
+### Outcome Tracking
 - Submit new health outcome scores
 - Persist patient history in PostgreSQL
 - Automatically refresh frontend state after mutations
 
----
-
-## Trend Analysis
+### Trend Analysis
 
 Each patient receives a calculated health trend:
 
-- Improving
-- Stable
-- Deteriorating
+| Trend | Meaning |
+|---|---|
+| ✅ Improving | Score delta is positive |
+| ➡️ Stable | Score delta is minimal |
+| ⚠️ Deteriorating | Score delta is negative |
 
 Trend calculations are derived from recent patient outcome deltas.
 
----
+### AI Clinical Recommendations
 
-## AI Clinical Recommendations
-
-Each patient card includes an **AI Insight** action that generates contextual clinical recommendations in real time.
-
-The recommendations stream progressively into the UI instead of waiting for the full response.
+Each patient card includes an **AI Insight** action that generates contextual clinical recommendations in real time. Recommendations stream progressively into the UI instead of waiting for the full response.
 
 ---
 
-# AI Clinical Insight Engine
+## AI Clinical Insight Engine
 
 One of the core features of this project is the AI-powered clinical recommendation system.
 
 When a user clicks the **"AI Insight"** button on a patient card, the frontend sends a streaming request to the backend, which generates contextual clinical recommendations using a locally hosted LLM through Ollama.
 
----
+### Model Used
 
-## Model Used
-
-- `qwen2.5:0.5b`
+- qwen2.5:0.5b
 - Served locally using Ollama
 - Streaming responses enabled for real-time UI updates
 
----
+### Why This Model?
 
-## Why This Model?
+The qwen2.5:0.5b model was selected because it is:
 
-The `qwen2.5:0.5b` model was selected because it is:
-
-- lightweight and fast for local development
-- efficient enough to run on consumer hardware
-- capable of producing structured recommendation-style responses
-- suitable for streaming token-by-token outputs with low latency
+- Lightweight and fast for local development
+- Efficient enough to run on consumer hardware
+- Capable of producing structured recommendation-style responses
+- Suitable for streaming token-by-token outputs with low latency
 
 This allowed the project to demonstrate real-time AI integration without relying on external paid APIs.
 
----
-
-## AI Request Flow
+### AI Request Flow
 
 1. User clicks **AI Insight**
-2. React frontend sends request to:
-   `/patients/{id}/insight`
+2. React frontend sends request to /patients/{id}/insight
 3. FastAPI backend:
-   - loads patient data
-   - builds a clinical context prompt
-   - sends request to Ollama
+   - Loads patient data
+   - Builds a clinical context prompt
+   - Sends request to Ollama
 4. Ollama streams generated tokens
 5. Backend converts tokens into SSE events
 6. Frontend progressively renders recommendations in real time
 
----
-
-## Streaming Architecture
+### Streaming Architecture
 
 The backend streams responses using **Server-Sent Events (SSE)**.
 
 The frontend consumes the stream incrementally using:
 
-- `ReadableStream`
-- `TextDecoder`
-- `AbortController`
+- ReadableStream
+- TextDecoder
+- AbortController
 
 This enables:
 
-- real-time rendering
-- cancellable requests
-- smoother UX
-- non-blocking AI interactions
+- Real-time rendering
+- Cancellable requests
+- Smoother UX
+- Non-blocking AI interactions
 
----
-
-## Structured Stream Handling
+### Structured Stream Handling
 
 The backend streams events in SSE format:
 
-```json
+json
 {
   "type": "chunk",
   "content": "..."
 }
 
+
 The frontend transforms these low-level stream events into clean recommendation panels so users never see raw JSON or transport-layer data.
 
-Example AI Recommendations
+### Example AI Recommendations
 
 The AI layer can generate:
 
-monitoring recommendations
-lifestyle intervention suggestions
-medication adherence reminders
-follow-up guidance
-risk-awareness recommendations
+- Monitoring recommendations
+- Lifestyle intervention suggestions
+- Medication adherence reminders
+- Follow-up guidance
+- Risk-awareness recommendations
 
-The AI system is designed as a clinical support feature rather than a diagnostic engine.
+> The AI system is designed as a **clinical support feature** rather than a diagnostic engine.
 
-Product Engineering Decisions
+---
 
-This project was intentionally designed with product engineering principles in mind.
+## Product Engineering Decisions
 
-Real-Time Streaming UX
-
+### Real-Time Streaming UX
 Instead of waiting for a complete AI response before rendering, the UI streams recommendations progressively for a faster and more responsive user experience.
 
-React Query for Server State
+### React Query for Server State
+TanStack React Query was used to cache API responses, simplify async state management, automatically refresh stale data, and reduce unnecessary network requests.
 
-TanStack React Query was used to:
+### Type-Safe Frontend
+The frontend is fully written in TypeScript to improve API safety, maintainability, component contracts, and developer experience.
 
-cache API responses
-simplify async state management
-automatically refresh stale data
-reduce unnecessary network requests
-Type-Safe Frontend
+### Separation of Concerns
+The architecture separates API logic, AI streaming logic, reusable UI components, data-fetching concerns, and presentation logic — keeping the application scalable and maintainable.
 
-The frontend is fully written in TypeScript to improve:
+### Local-First AI Development
+Using Ollama with a locally hosted model enables offline experimentation, lower development costs, faster iteration, and reduced external dependencies.
 
-API safety
-maintainability
-component contracts
-developer experience
-Separation of Concerns
+---
 
-The architecture separates:
+## Technical Stack
 
-API logic
-AI streaming logic
-reusable UI components
-data-fetching concerns
-presentation logic
+### Frontend
+| Technology | Purpose |
+|---|---|
+| React 19 | UI framework |
+| TypeScript | Type safety |
+| Vite | Build tool |
+| TanStack React Query | Server state management |
+| Tailwind CSS | Styling |
+| Lucide React | Icons |
+| Vitest + React Testing Library | Testing |
 
-This keeps the application scalable and maintainable.
+### Backend
+| Technology | Purpose |
+|---|---|
+| Python 3.11 | Runtime |
+| FastAPI | Web framework |
+| SQLAlchemy | ORM |
+| PostgreSQL | Database |
+| Ollama | Local LLM inference |
+| Server-Sent Events | AI response streaming |
+| Pytest | Testing |
 
-Local-First AI Development
+### Infrastructure
+| Technology | Purpose |
+|---|---|
+| Docker + Docker Compose | Containerisation |
+| GitHub Actions | CI/CD |
 
-Using Ollama with a locally hosted model enables:
+---
 
-offline experimentation
-lower development costs
-faster iteration
-reduced external dependencies
-Performance & UX Considerations
+## API Endpoints
 
-Several UX-focused improvements were implemented:
-
-streaming AI responses
-instant patient filtering
-optimistic data refresh
-lightweight rendering
-cancelable AI requests
-responsive Tailwind layout
-clean recommendation formatting
-
-The application prioritizes perceived responsiveness and clarity of information.
-
-Technical Stack
-Frontend
-React 19
-TypeScript
-Vite
-TanStack React Query
-Tailwind CSS
-Lucide React
-Vitest
-React Testing Library
-Backend
-Python 3.11
-FastAPI
-SQLAlchemy
-PostgreSQL
-Ollama
-Server-Sent Events (SSE)
-Pytest
-Infrastructure
-Docker
-Docker Compose
-GitHub Actions CI
-API Endpoints
-Patients
-Get Patients
+### Get Patients
+http
 GET /patients
 
-Optional query parameter:
-
+Optional filter:
+http
 GET /patients?condition=diabetes
 
-Returns:
+Returns patient information, current score, and calculated trend.
 
-patient information
-current score
-calculated trend
-Create Outcome
+### Create Outcome
+http
 POST /outcomes
 
-Body:
-
+json
 {
   "patient_id": 1,
   "score": 85
 }
-Generate AI Insight
+
+
+### Generate AI Insight
+http
 POST /patients/{id}/insight
 
-Returns streaming SSE response.
+Returns a streaming SSE response.
 
-Kafka Event Stub
+---
 
-The backend includes a lightweight Kafka-style event stub that simulates publishing:
+## Kafka Event Stub
 
-outcome.submitted
+The backend includes a lightweight Kafka-style event stub that simulates publishing `outcome.submitted` events whenever a new patient outcome is recorded.
 
-events whenever a new patient outcome is recorded.
+This demonstrates how the system could later integrate with Kafka, event pipelines, alerting systems, and analytics consumers.
 
-This demonstrates how the system could later integrate with:
+---
 
-Kafka
-event pipelines
-alerting systems
-analytics consumers
-Testing
-Backend
+## Testing
 
+### Backend
 Pytest coverage includes:
+- API endpoints
+- Trend calculation logic
+- Outcome submission
+- Validation handling
 
-API endpoints
-trend calculation logic
-outcome submission
-validation handling
-Frontend
-
+### Frontend
 Vitest + React Testing Library tests include:
+- Component rendering
+- User interactions
+- State updates
+- Query behavior
 
-component rendering
-user interactions
-state updates
-query behavior
-CI/CD
+---
 
-GitHub Actions automatically runs:
+## CI/CD
 
-frontend tests
-backend tests
-linting
-validation checks
+GitHub Actions automatically runs frontend tests, backend tests, linting, and validation checks on every push and pull request.
 
-on every push and pull request.
+---
 
-Local Development
-Prerequisites
-Docker
-Docker Compose
-Node.js
-Python 3.11
-Ollama
-Run Ollama
+## Local Development
 
-Install model:
+### Prerequisites
+- Docker and Docker Compose
+- Node.js
+- Python 3.11
+- Ollama
 
+### Run Ollama
+bash
 ollama pull qwen2.5:0.5b
 
 Start Ollama locally before running the backend.
 
-Clone Repository
-git clone https://github.com/your-username/patient-outcomes-tracker.git
-
+### Clone Repository
+bash
+git clone https://github.com/Demontrick/patient-outcomes-tracker.git
 cd patient-outcomes-tracker
-Start Application
+
+
+### Start Application
+bash
 docker-compose up --build
-Access Application
 
-Frontend:
 
-http://localhost:80
+### Access Application
+- **Frontend:** http://localhost:80
+- **Backend API docs:** http://localhost:8000/docs
 
-Backend:
-
-http://localhost:8000/docs
-Seed Sample Data
+### Seed Sample Data
+bash
 curl -X POST http://localhost:8000/seed
-Run Frontend Locally
+
+
+### Run Frontend Locally
+bash
 cd frontend
-
 npm install
-
 npm run dev
-Run Backend Locally
+
+
+### Run Backend Locally
+bash
 cd backend
-
 python -m venv venv
-
-Linux / macOS:
-
-source venv/bin/activate
-
-Windows:
-
-venv\Scripts\activate
-
-Install dependencies:
-
+source venv/bin/activate  # Linux/macOS
+# venv\Scripts\activate   # Windows
 pip install -r requirements.txt
-
-Run server:
-
 uvicorn main:app --reload
-Project Structure
+
+
+---
+
+## Project Structure
+
+
 patient-outcomes-tracker/
 │
 ├── backend/
@@ -383,25 +329,37 @@ patient-outcomes-tracker/
 │
 ├── docker-compose.yml
 └── README.md
-Future Enhancements
 
-Potential next steps include:
 
-Retrieval-Augmented Generation (RAG)
-vector database integration
-historical trend summarization
-physician review workflows
-structured AI outputs
-advanced analytics dashboards
-real-time notifications
-multi-patient risk prediction
-healthcare-specific fine-tuned models
-Key Takeaways
+---
+
+## Future Enhancements
+
+- Retrieval-Augmented Generation (RAG)
+- Vector database integration
+- Historical trend summarization
+- Physician review workflows
+- Structured AI outputs
+- Advanced analytics dashboards
+- Real-time notifications
+- Multi-patient risk prediction
+- Healthcare-specific fine-tuned models
+
+---
+
+## Key Takeaways
 
 This project demonstrates:
 
-full-stack TypeScript + Python development
-real-time streaming architectures
+- Full-stack TypeScript + Python development
+- Real-time streaming architectures
+- AI integration with local LLMs
+- Product-focused frontend engineering
+- Scalable API design
+- Async state management
+- Modern React patterns
+- Responsive UX design
+- Production-style architecture decisions
 AI integration with local LLMs
 product-focused frontend engineering
 scalable API design
